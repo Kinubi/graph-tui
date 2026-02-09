@@ -72,9 +72,11 @@ fn render_main(app: &App, area: Rect, buf: &mut Buffer) {
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
 
-    let counter_text = Text::from(vec![Line::from(vec!["Value: ".into(), "69".yellow()])]);
+    let welcome_text = Text::from(
+        "Welcome to the Tui Graph Editor! Press 'G' to start editing your graph."
+    );
 
-    Paragraph::new(counter_text).centered().block(block).render(area, buf);
+    Paragraph::new(welcome_text).centered().block(block).render(area, buf);
 }
 
 fn render_graph_editor(app: &App, area: Rect, buf: &mut Buffer) {
