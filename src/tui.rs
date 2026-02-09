@@ -133,16 +133,18 @@ fn render_node_editor(app: &App, area: Rect, buf: &mut Buffer) {
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
 
-    let mode_line = match &app.currently_editing {
-        Some(CurrentlyEditing::Node(NodeEditorMode::Label)) => "Editing: Label",
-        Some(CurrentlyEditing::Edge(_)) => "Editing: Edge (unexpected)",
-        None => "Editing: None",
+    let label_active = match &app.currently_editing {
+        Some(CurrentlyEditing::Node(NodeEditorMode::Label)) => true,
+        Some(CurrentlyEditing::Edge(_)) => false,
+        None => false,
     };
 
+    let label_prefix = if label_active { "Label:".yellow().underlined() } else { "Label:".into() };
+    let label_value = app.label.clone().yellow();
+
     let lines = vec![
-        Line::from(mode_line),
         Line::from(""),
-        Line::from(vec!["Label: ".into(), app.label.clone().yellow()]),
+        Line::from(vec![label_prefix, " ".into(), label_value]),
         Line::from(""),
         Line::from("Enter to save, Esc to cancel, Q to go back.")
     ];
@@ -172,20 +174,29 @@ fn render_edge_editor(app: &App, area: Rect, buf: &mut Buffer) {
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
 
-    let mode_line = match &app.currently_editing {
-        Some(CurrentlyEditing::Edge(EdgeEditorMode::Label)) => "Editing: Label",
-        Some(CurrentlyEditing::Edge(EdgeEditorMode::InOuts(InOut::From))) => "Editing: From",
-        Some(CurrentlyEditing::Edge(EdgeEditorMode::InOuts(InOut::To))) => "Editing: To",
-        Some(CurrentlyEditing::Node(_)) => "Editing: Node (unexpected)",
-        None => "Editing: None",
+    let (label_active, from_active, to_active) = match &app.currently_editing {
+        Some(CurrentlyEditing::Edge(EdgeEditorMode::Label)) => (true, false, false),
+        Some(CurrentlyEditing::Edge(EdgeEditorMode::InOuts(InOut::From))) => {
+            (false, true, false)
+        }
+        Some(CurrentlyEditing::Edge(EdgeEditorMode::InOuts(InOut::To))) => { (false, false, true) }
+        Some(CurrentlyEditing::Node(_)) => (false, false, false),
+        None => (false, false, false),
     };
 
+    let label_prefix = if label_active { "Label:".yellow().bold() } else { "Label:".into() };
+    let from_prefix = if from_active { "From:".yellow().bold() } else { "From:".into() };
+    let to_prefix = if to_active { "To:".yellow().bold() } else { "To:".into() };
+    let label_value = app.label.clone().yellow();
+
+    let from_value = format!("{}", app.in_outs[0]).yellow();
+    let to_value = format!("{}", app.in_outs[1]).yellow();
+
     let lines = vec![
-        Line::from(mode_line),
         Line::from(""),
-        Line::from(vec!["Label: ".into(), app.label.clone().yellow()]),
-        Line::from(vec!["From: ".into(), format!("{}", app.in_outs[0]).yellow()]),
-        Line::from(vec!["To: ".into(), format!("{}", app.in_outs[1]).yellow()]),
+        Line::from(vec![label_prefix, " ".into(), label_value]),
+        Line::from(vec![from_prefix, " ".into(), from_value]),
+        Line::from(vec![to_prefix, " ".into(), to_value]),
         Line::from(""),
         Line::from("Enter to advance/save, Esc to cancel, Q to go back.")
     ];

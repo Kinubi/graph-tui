@@ -181,6 +181,27 @@ impl App {
                             }
                         }
                     }
+                    KeyCode::Tab => {
+                        if let Some(CurrentlyEditing::Edge(mode)) = &self.currently_editing {
+                            match mode {
+                                EdgeEditorMode::Label => {
+                                    self.currently_editing = Some(
+                                        CurrentlyEditing::Edge(EdgeEditorMode::InOuts(InOut::From))
+                                    );
+                                }
+                                EdgeEditorMode::InOuts(InOut::From) => {
+                                    self.currently_editing = Some(
+                                        CurrentlyEditing::Edge(EdgeEditorMode::InOuts(InOut::To))
+                                    );
+                                }
+                                EdgeEditorMode::InOuts(InOut::To) => {
+                                    self.currently_editing = Some(
+                                        CurrentlyEditing::Edge(EdgeEditorMode::Label)
+                                    );
+                                }
+                            }
+                        }
+                    }
                     KeyCode::Backspace => {
                         if let Some(CurrentlyEditing::Edge(mode)) = &self.currently_editing {
                             match mode {
