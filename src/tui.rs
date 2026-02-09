@@ -1,6 +1,7 @@
 use std::io;
 
-use crossterm::event::{ self, Event, KeyCode, KeyEvent, KeyEventKind };
+use crossterm::event;
+use crossterm::event::{ Event, KeyEventKind };
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -11,6 +12,8 @@ use ratatui::{
     DefaultTerminal,
     Frame,
 };
+
+use crate::app::CurrentScreen;
 
 use crate::app::App;
 
@@ -38,45 +41,115 @@ impl Tui {
         if event::poll(std::time::Duration::from_millis(16))? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    self.handle_key(app, key);
+                    app.on_key(key);
                 }
             }
         }
         Ok(())
     }
-
-    fn handle_key(&mut self, app: &mut App, key: KeyEvent) {
-        match key.code {
-            KeyCode::Char('q') | KeyCode::Char('Q') => app.exit(),
-            _ => app.on_key(key),
-        }
-    }
 }
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let title = Line::from(" Counter App Tutorial ".bold());
-        let instructions = Line::from(
-            vec![
-                " Decrement ".into(),
-                "<Left>".blue().bold(),
-                " Increment ".into(),
-                "<Right>".blue().bold(),
-                " Quit ".into(),
-                "<Q> ".blue().bold()
-            ]
-        );
-        let block = Block::bordered()
-            .title(title.centered())
-            .title_bottom(instructions.centered())
-            .border_set(border::THICK);
-
-        let counter_text = Text::from(
-            vec![Line::from(vec!["Value: ".into(), self.counter().to_string().yellow()])]
-        );
-
-        Paragraph::new(counter_text).centered().block(block).render(area, buf);
+        match self.current_screen {
+            CurrentScreen::Main => render_main(self, area, buf),
+            CurrentScreen::GraphEditor => render_graph_editor(self, area, buf),
+            CurrentScreen::NodeEditor => render_node_editor(self, area, buf),
+            CurrentScreen::EdgeEditor => render_edge_editor(self, area, buf),
+            CurrentScreen::Exiting => render_exiting(self, area, buf),
+            _ => {}
+        }
     }
+}
+
+fn render_main(app: &App, area: Rect, buf: &mut Buffer) {
+    let title = Line::from(" Tui Graph Editor ".bold());
+    let instructions = Line::from(
+        vec![" Graph Editor ".into(), "<G>".blue().bold(), " Quit ".into(), "<Q> ".blue().bold()]
+    );
+    let block = Block::bordered()
+        .title(title.centered())
+        .title_bottom(instructions.centered())
+        .border_set(border::THICK);
+
+    let counter_text = Text::from(vec![Line::from(vec!["Value: ".into(), "69".yellow()])]);
+
+    Paragraph::new(counter_text).centered().block(block).render(area, buf);
+}
+
+fn render_graph_editor(app: &App, area: Rect, buf: &mut Buffer) {
+    let title = Line::from(" Tui Graph Editor: Graph ".bold());
+    let instructions = Line::from(
+        vec![
+            " Decrement ".into(),
+            "<Left>".blue().bold(),
+            " Increment ".into(),
+            "<Right>".blue().bold(),
+            " Quit ".into(),
+            "<Q> ".blue().bold()
+        ]
+    );
+    let block = Block::bordered()
+        .title(title.centered())
+        .title_bottom(instructions.centered())
+        .border_set(border::THICK);
+
+    let counter_text = Text::from(vec![Line::from(vec!["Value: ".into(), "69".yellow()])]);
+
+    Paragraph::new(counter_text).centered().block(block).render(area, buf);
+}
+
+fn render_node_editor(app: &App, area: Rect, buf: &mut Buffer) {
+    let title = Line::from(" Tui Graph Editor: Node ".bold());
+    let instructions = Line::from(
+        vec![
+            " Decrement ".into(),
+            "<Left>".blue().bold(),
+            " Increment ".into(),
+            "<Right>".blue().bold(),
+            " Quit ".into(),
+            "<Q> ".blue().bold()
+        ]
+    );
+    let block = Block::bordered()
+        .title(title.centered())
+        .title_bottom(instructions.centered())
+        .border_set(border::THICK);
+
+    let counter_text = Text::from(vec![Line::from(vec!["Value: ".into(), "69".yellow()])]);
+
+    Paragraph::new(counter_text).centered().block(block).render(area, buf);
+}
+
+fn render_edge_editor(app: &App, area: Rect, buf: &mut Buffer) {
+    let title = Line::from(" Tui Graph Editor: Edge ".bold());
+    let instructions = Line::from(
+        vec![
+            " Decrement ".into(),
+            "<Left>".blue().bold(),
+            " Increment ".into(),
+            "<Right>".blue().bold(),
+            " Quit ".into(),
+            "<Q> ".blue().bold()
+        ]
+    );
+    let block = Block::bordered()
+        .title(title.centered())
+        .title_bottom(instructions.centered())
+        .border_set(border::THICK);
+
+    let counter_text = Text::from(vec![Line::from(vec!["Value: ".into(), "69".yellow()])]);
+
+    Paragraph::new(counter_text).centered().block(block).render(area, buf);
+}
+
+fn render_exiting(app: &App, area: Rect, buf: &mut Buffer) {
+    let title = Line::from("Exiting".bold());
+    let block = Block::bordered().title(title.centered()).border_set(border::THICK);
+    let counter_text = Text::from(
+        vec![Line::from(vec!["Do You Wish to Exit: ".into(), "y/n".yellow()])]
+    );
+    Paragraph::new(counter_text).centered().block(block).render(area, buf);
 }
 
 #[cfg(test)]
@@ -109,19 +182,5 @@ mod tests {
         expected.set_style(Rect::new(43, 3, 4, 1), key_style);
 
         assert_eq!(buf, expected);
-    }
-
-    #[test]
-    fn handle_key_event() {
-        let mut tui = Tui::new();
-        let mut app = App::new();
-        tui.handle_key(&mut app, KeyCode::Right.into());
-        assert_eq!(app.counter, 1);
-
-        tui.handle_key(&mut app, KeyCode::Left.into());
-        assert_eq!(app.counter, 0);
-
-        tui.handle_key(&mut app, KeyCode::Char('q').into());
-        assert!(app.exit);
     }
 }
