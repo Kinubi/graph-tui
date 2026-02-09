@@ -91,9 +91,18 @@ impl App {
             CurrentScreen::GraphEditor => {
                 match key.code {
                     KeyCode::Char('n') | KeyCode::Char('N') => {
+                        self.label.clear();
+                        self.currently_editing = Some(
+                            CurrentlyEditing::Node(NodeEditorMode::Label)
+                        );
                         self.current_screen = CurrentScreen::NodeEditor;
                     }
                     KeyCode::Char('e') | KeyCode::Char('E') => {
+                        self.label.clear();
+                        self.in_outs = [0, 0];
+                        self.currently_editing = Some(
+                            CurrentlyEditing::Edge(EdgeEditorMode::Label)
+                        );
                         self.current_screen = CurrentScreen::EdgeEditor;
                     }
                     KeyCode::Char('q') | KeyCode::Char('Q') => {
@@ -105,10 +114,15 @@ impl App {
             CurrentScreen::NodeEditor => {
                 match key.code {
                     KeyCode::Char('q') | KeyCode::Char('Q') => {
+                        self.label.clear();
+                        self.currently_editing = None;
                         self.current_screen = CurrentScreen::GraphEditor;
                     }
                     KeyCode::Enter => {
                         self.add_node();
+                        self.label.clear();
+                        self.current_screen = CurrentScreen::GraphEditor;
+                        self.currently_editing = None;
                     }
                     KeyCode::Backspace => {
                         if let Some(CurrentlyEditing::Node(mode)) = &self.currently_editing {
@@ -121,6 +135,7 @@ impl App {
                     }
                     KeyCode::Esc => {
                         self.currently_editing = None;
+                        self.label.clear();
                         self.current_screen = CurrentScreen::GraphEditor;
                     }
                     KeyCode::Char(value) => {
@@ -138,6 +153,9 @@ impl App {
             CurrentScreen::EdgeEditor => {
                 match key.code {
                     KeyCode::Char('q') | KeyCode::Char('Q') => {
+                        self.label.clear();
+                        self.in_outs = [0, 0];
+                        self.currently_editing = None;
                         self.current_screen = CurrentScreen::GraphEditor;
                     }
                     KeyCode::Enter => {
@@ -155,6 +173,8 @@ impl App {
                                 }
                                 EdgeEditorMode::InOuts(InOut::To) => {
                                     self.add_edge();
+                                    self.label.clear();
+                                    self.in_outs = [0, 0];
                                     self.currently_editing = None;
                                     self.current_screen = CurrentScreen::GraphEditor;
                                 }
@@ -184,6 +204,8 @@ impl App {
                     }
                     KeyCode::Esc => {
                         self.currently_editing = None;
+                        self.label.clear();
+                        self.in_outs = [0, 0];
                         self.current_screen = CurrentScreen::GraphEditor;
                     }
                     KeyCode::Char(value) => {
@@ -194,15 +216,9 @@ impl App {
                                 }
                                 EdgeEditorMode::InOuts(InOut::From) => {
                                     self.in_outs[0] = value.to_digit(10).unwrap_or(0) as u64;
-                                    self.currently_editing = Some(
-                                        CurrentlyEditing::Edge(EdgeEditorMode::Label)
-                                    );
                                 }
                                 EdgeEditorMode::InOuts(InOut::To) => {
                                     self.in_outs[1] = value.to_digit(10).unwrap_or(0) as u64;
-                                    self.currently_editing = Some(
-                                        CurrentlyEditing::Edge(EdgeEditorMode::InOuts(InOut::From))
-                                    );
                                 }
                             }
                         }
@@ -237,6 +253,7 @@ impl App {
         let to = self.in_outs[1];
         let id = (self.graph.edges.len() as u64) + 1;
         self.graph.edges.push(crate::graph::Edge {
+            id,
             from,
             to,
             label: self.label.clone(),

@@ -4,18 +4,16 @@ use crossterm::event;
 use crossterm::event::{ Event, KeyEventKind };
 use ratatui::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{ Constraint, Direction, Layout, Rect },
     style::Stylize,
     symbols::border,
     text::{ Line, Text },
-    widgets::{ Block, Paragraph, Widget },
+    widgets::{ Block, Clear, Paragraph, Widget },
     DefaultTerminal,
     Frame,
 };
 
-use crate::app::CurrentScreen;
-
-use crate::app::App;
+use crate::app::{ App, CurrentScreen, CurrentlyEditing, EdgeEditorMode, InOut, NodeEditorMode };
 
 pub struct Tui;
 
@@ -53,6 +51,7 @@ impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         match self.current_screen {
             CurrentScreen::Main => render_main(self, area, buf),
+            CurrentScreen::Graph => render_graph(self, area, buf),
             CurrentScreen::GraphEditor => render_graph_editor(self, area, buf),
             CurrentScreen::NodeEditor => render_node_editor(self, area, buf),
             CurrentScreen::EdgeEditor => render_edge_editor(self, area, buf),
@@ -79,15 +78,30 @@ fn render_main(app: &App, area: Rect, buf: &mut Buffer) {
     Paragraph::new(welcome_text).centered().block(block).render(area, buf);
 }
 
+fn render_graph(app: &App, area: Rect, buf: &mut Buffer) {
+    let title = Line::from(" Tui Graph Editor: Graph Overview ".bold());
+    let instructions = Line::from(
+        vec![" Edit Graph ".into(), "<E>".blue().bold(), " Quit ".into(), "<Q> ".blue().bold()]
+    );
+    let block = Block::bordered()
+        .title(title.centered())
+        .title_bottom(instructions.centered())
+        .border_set(border::THICK);
+
+    let graph_text = Text::from(build_graph_lines(app));
+
+    Paragraph::new(graph_text).block(block).render(area, buf);
+}
+
 fn render_graph_editor(app: &App, area: Rect, buf: &mut Buffer) {
     let title = Line::from(" Tui Graph Editor: Graph ".bold());
     let instructions = Line::from(
         vec![
-            " Decrement ".into(),
-            "<Left>".blue().bold(),
-            " Increment ".into(),
-            "<Right>".blue().bold(),
-            " Quit ".into(),
+            " Add Node ".into(),
+            "<N>".blue().bold(),
+            " Add Edge ".into(),
+            "<E>".blue().bold(),
+            " Back ".into(),
             "<Q> ".blue().bold()
         ]
     );
@@ -96,21 +110,22 @@ fn render_graph_editor(app: &App, area: Rect, buf: &mut Buffer) {
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
 
-    let counter_text = Text::from(vec![Line::from(vec!["Value: ".into(), "69".yellow()])]);
-
-    Paragraph::new(counter_text).centered().block(block).render(area, buf);
+    let graph_text = Text::from(build_graph_lines(app));
+    Paragraph::new(graph_text).block(block).render(area, buf);
 }
 
 fn render_node_editor(app: &App, area: Rect, buf: &mut Buffer) {
-    let title = Line::from(" Tui Graph Editor: Node ".bold());
+    render_graph_editor(app, area, buf);
+
+    let title = Line::from(" Add Node ".bold());
     let instructions = Line::from(
         vec![
-            " Decrement ".into(),
-            "<Left>".blue().bold(),
-            " Increment ".into(),
-            "<Right>".blue().bold(),
-            " Quit ".into(),
-            "<Q> ".blue().bold()
+            " Type label ".into(),
+            "<A..Z>".blue().bold(),
+            " Save ".into(),
+            "<Enter>".blue().bold(),
+            " Cancel ".into(),
+            "<Esc> ".blue().bold()
         ]
     );
     let block = Block::bordered()
@@ -118,21 +133,38 @@ fn render_node_editor(app: &App, area: Rect, buf: &mut Buffer) {
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
 
-    let counter_text = Text::from(vec![Line::from(vec!["Value: ".into(), "69".yellow()])]);
+    let mode_line = match &app.currently_editing {
+        Some(CurrentlyEditing::Node(NodeEditorMode::Label)) => "Editing: Label",
+        Some(CurrentlyEditing::Edge(_)) => "Editing: Edge (unexpected)",
+        None => "Editing: None",
+    };
 
-    Paragraph::new(counter_text).centered().block(block).render(area, buf);
+    let lines = vec![
+        Line::from(mode_line),
+        Line::from(""),
+        Line::from(vec!["Label: ".into(), app.label.clone().yellow()]),
+        Line::from(""),
+        Line::from("Enter to save, Esc to cancel, Q to go back.")
+    ];
+
+    let body = Text::from(lines);
+    let popup_area = centered_rect(60, 40, area);
+    Clear.render(popup_area, buf);
+    Paragraph::new(body).block(block).render(popup_area, buf);
 }
 
 fn render_edge_editor(app: &App, area: Rect, buf: &mut Buffer) {
-    let title = Line::from(" Tui Graph Editor: Edge ".bold());
+    render_graph_editor(app, area, buf);
+
+    let title = Line::from(" Add Edge ".bold());
     let instructions = Line::from(
         vec![
-            " Decrement ".into(),
-            "<Left>".blue().bold(),
-            " Increment ".into(),
-            "<Right>".blue().bold(),
-            " Quit ".into(),
-            "<Q> ".blue().bold()
+            " Type label ".into(),
+            "<A..Z>".blue().bold(),
+            " Next ".into(),
+            "<Enter>".blue().bold(),
+            " Cancel ".into(),
+            "<Esc> ".blue().bold()
         ]
     );
     let block = Block::bordered()
@@ -140,9 +172,77 @@ fn render_edge_editor(app: &App, area: Rect, buf: &mut Buffer) {
         .title_bottom(instructions.centered())
         .border_set(border::THICK);
 
-    let counter_text = Text::from(vec![Line::from(vec!["Value: ".into(), "69".yellow()])]);
+    let mode_line = match &app.currently_editing {
+        Some(CurrentlyEditing::Edge(EdgeEditorMode::Label)) => "Editing: Label",
+        Some(CurrentlyEditing::Edge(EdgeEditorMode::InOuts(InOut::From))) => "Editing: From",
+        Some(CurrentlyEditing::Edge(EdgeEditorMode::InOuts(InOut::To))) => "Editing: To",
+        Some(CurrentlyEditing::Node(_)) => "Editing: Node (unexpected)",
+        None => "Editing: None",
+    };
 
-    Paragraph::new(counter_text).centered().block(block).render(area, buf);
+    let lines = vec![
+        Line::from(mode_line),
+        Line::from(""),
+        Line::from(vec!["Label: ".into(), app.label.clone().yellow()]),
+        Line::from(vec!["From: ".into(), format!("{}", app.in_outs[0]).yellow()]),
+        Line::from(vec!["To: ".into(), format!("{}", app.in_outs[1]).yellow()]),
+        Line::from(""),
+        Line::from("Enter to advance/save, Esc to cancel, Q to go back.")
+    ];
+
+    let body = Text::from(lines);
+    let popup_area = centered_rect(60, 40, area);
+    Clear.render(popup_area, buf);
+    Paragraph::new(body).block(block).render(popup_area, buf);
+}
+
+fn build_graph_lines(app: &App) -> Vec<Line<'static>> {
+    let mut lines = Vec::new();
+    lines.push(
+        Line::from(format!("Nodes: {}  Edges: {}", app.graph.nodes.len(), app.graph.edges.len()))
+    );
+
+    if app.graph.nodes.is_empty() {
+        lines.push(Line::from("No nodes"));
+    } else {
+        lines.push(Line::from("Nodes:"));
+        for node in &app.graph.nodes {
+            lines.push(Line::from(format!("- {}: {}", node.id, node.label)));
+        }
+    }
+
+    if app.graph.edges.is_empty() {
+        lines.push(Line::from("No edges"));
+    } else {
+        lines.push(Line::from("Edges:"));
+        for edge in &app.graph.edges {
+            lines.push(Line::from(format!("- {} -> {}: {}", edge.from, edge.to, edge.label)));
+        }
+    }
+
+    lines
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let vertical = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+    let horizontal = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(vertical[1]);
+
+    horizontal[1]
 }
 
 fn render_exiting(app: &App, area: Rect, buf: &mut Buffer) {
