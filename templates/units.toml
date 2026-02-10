@@ -3,6 +3,17 @@
 [format]
 root = "units"
 
+[format.tables.sim]
+duration = 86400
+integrator = "bdf2"
+adaptive_dt = true
+dt_min = 1.0
+dt_max = 60.0
+adapt_target_iters = 6.0
+time_units = "seconds"
+parallel_rhs = true
+fuse_chains = true
+
 [nodes.types.cstr]
 order = ["name", "coords"]
 

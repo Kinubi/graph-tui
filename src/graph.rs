@@ -178,6 +178,18 @@ impl Graph {
             .unwrap_or("units");
 
         let mut root = toml::map::Map::new();
+
+        // Extra top-level tables from the template.
+        if let Some(format) = catalog.format.as_ref() {
+            for (k, v) in &format.tables {
+                // If someone defines a table with the same key as `root`, the graph-derived
+                // root table wins (we insert it last below).
+                if k != root_key {
+                    root.insert(k.clone(), v.clone());
+                }
+            }
+        }
+
         let mut root_table = toml::map::Map::new();
 
         // Deterministic output: preserve editing intent by ordering by node id.
@@ -230,12 +242,36 @@ impl Graph {
             .unwrap_or("units");
 
         let doc = self.to_template_toml_value(catalog);
+
+        // Render extra top-level tables first, in stable key order.
+        let mut out = String::new();
+        let mut top_keys: Vec<&String> = doc
+            .as_table()
+            .map(|t| t.keys().collect())
+            .unwrap_or_default();
+        top_keys.sort();
+        for key in top_keys {
+            if key.as_str() == root_key {
+                continue;
+            }
+            let Some(v) = doc.get(key) else {
+                continue;
+            };
+            if let Some(tbl) = v.as_table() {
+                out.push_str(&format!("[{}]\n", key));
+                let mut keys: Vec<&String> = tbl.keys().collect();
+                keys.sort();
+                for k in keys {
+                    out.push_str(&render_assignment(k, &tbl[k])?);
+                }
+                out.push('\n');
+            }
+        }
+
         let root_table = doc
             .get(root_key)
             .and_then(|v| v.as_table())
             .ok_or_else(|| format!("missing {} table", root_key))?;
-
-        let mut out = String::new();
         out.push_str(&format!("[{}]\n\n", root_key));
 
         // Stable ordering: type key sorted, then insertion order within arrays.
@@ -320,6 +356,11 @@ mod tests {
 
         let out = g.to_template_toml_string(&catalog).unwrap();
         let parsed: toml::Value = toml::from_str(&out).expect("output is valid toml");
+
+        // Template-defined top-level [sim] table should be present.
+        let sim = parsed.get("sim").and_then(|v| v.as_table()).expect("sim table");
+        assert_eq!(sim.get("integrator").and_then(|v| v.as_str()), Some("bdf2"));
+
         let root_key = catalog.format
             .as_ref()
             .map(|f| f.root.as_str())

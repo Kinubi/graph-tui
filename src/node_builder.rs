@@ -40,6 +40,12 @@ pub struct NodeTypeCatalog {
 pub struct FormatSpec {
     /// Root table name for serialized output (e.g. "units").
     pub root: String,
+
+    /// Extra top-level tables to include in the serialized TOML (e.g. [sim]).
+    ///
+    /// These are emitted verbatim from the template (no graph-derived data).
+    #[serde(default)]
+    pub tables: HashMap<String, toml::Value>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
