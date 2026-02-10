@@ -5,9 +5,10 @@ use crossterm::event::{ Event, KeyEventKind };
 use ratatui::{
     buffer::Buffer,
     layout::{ Constraint, Direction, Layout, Rect },
+    style::{ Color, Style },
     style::Stylize,
     symbols::border,
-    text::{ Line, Text },
+    text::{ Line, Span, Text },
     widgets::{ Block, Clear, Paragraph, Widget },
     DefaultTerminal,
     Frame,
@@ -56,12 +57,11 @@ impl Widget for &App {
             CurrentScreen::NodeEditor => render_node_editor(self, area, buf),
             CurrentScreen::EdgeEditor => render_edge_editor(self, area, buf),
             CurrentScreen::Exiting => render_exiting(self, area, buf),
-            _ => {}
         }
     }
 }
 
-fn render_main(app: &App, area: Rect, buf: &mut Buffer) {
+fn render_main(_app: &App, area: Rect, buf: &mut Buffer) {
     let title = Line::from(" Tui Graph Editor ".bold());
     let instructions = Line::from(
         vec![" Graph Editor ".into(), "<G>".blue().bold(), " Quit ".into(), "<Q> ".blue().bold()]
@@ -120,9 +120,9 @@ fn render_node_editor(app: &App, area: Rect, buf: &mut Buffer) {
     let title = Line::from(" Add Node ".bold());
     let instructions = Line::from(
         vec![
-            " Type label ".into(),
+            " Type ".into(),
             "<A..Z>".blue().bold(),
-            " Save ".into(),
+            " Next/Save ".into(),
             "<Enter>".blue().bold(),
             " Cancel ".into(),
             "<Esc> ".blue().bold()
@@ -135,6 +135,8 @@ fn render_node_editor(app: &App, area: Rect, buf: &mut Buffer) {
 
     let label_active = match &app.currently_editing {
         Some(CurrentlyEditing::Node(NodeEditorMode::Label)) => true,
+        Some(CurrentlyEditing::Node(NodeEditorMode::Param)) => false,
+        Some(CurrentlyEditing::Node(NodeEditorMode::Type)) => false,
         Some(CurrentlyEditing::Edge(_)) => false,
         None => false,
     };
@@ -142,17 +144,85 @@ fn render_node_editor(app: &App, area: Rect, buf: &mut Buffer) {
     let label_prefix = if label_active { "Label:".yellow().underlined() } else { "Label:".into() };
     let label_value = app.label.clone().yellow();
 
-    let lines = vec![
-        Line::from(""),
-        Line::from(vec![label_prefix, " ".into(), label_value]),
-        Line::from(""),
-        Line::from("Enter to save, Esc to cancel, Q to go back.")
-    ];
+    let mut lines = Vec::new();
+
+    if matches!(&app.currently_editing, Some(CurrentlyEditing::Node(NodeEditorMode::Type))) {
+        let type_name = app.current_type_name().unwrap_or("-");
+        lines.push(Line::from(vec![label_prefix, " ".into(), label_value]));
+        lines.push(Line::from(format!("Mode: type")));
+        lines.push(Line::from(format!("Type: {}", type_name)));
+        lines.push(Line::from("Use Up/Down to select, Enter to confirm."));
+    } else if matches!(&app.currently_editing, Some(CurrentlyEditing::Node(NodeEditorMode::Label))) {
+        lines.push(Line::from(vec![label_prefix, " ".into(), label_value]));
+        lines.push(Line::from(""));
+        lines.push(Line::from("Enter label, then press Enter to continue."));
+    } else if let Some(edit) = &app.node_edit {
+        let param_name = edit.current_key().unwrap_or("-");
+        let param_type = edit
+            .current_def()
+            .map(|def| format!("{:?}", def.kind))
+            .unwrap_or_else(|| "-".to_string());
+        lines.push(Line::from(vec![label_prefix, " ".into(), label_value]));
+        lines.push(Line::from(format!("Param: {}", param_name)));
+        lines.push(Line::from(format!("Type: {}", param_type)));
+        lines.push(render_param_input_line(edit.current_def(), &edit.buffer));
+        let input_debug = if edit.buffer.is_empty() {
+            "<empty>".to_string()
+        } else {
+            edit.buffer.clone()
+        };
+        lines.push(Line::from(format!("Input: {}", input_debug)));
+        if let Some(format_hint) = param_format_hint(edit.current_def()) {
+            lines.push(Line::from(format!("Hint: {}", format_hint)));
+        }
+        if let Some(error) = &edit.error {
+            lines.push(Line::from(format!("Error: {}", error)).red());
+        }
+    }
+
+    lines.push(Line::from(""));
+    lines.push(Line::from("Enter to advance/save, Esc to cancel, Q to go back."));
 
     let body = Text::from(lines);
-    let popup_area = centered_rect(60, 40, area);
+    let popup_area = centered_rect(80, 70, area);
     Clear.render(popup_area, buf);
     Paragraph::new(body).block(block).render(popup_area, buf);
+}
+
+fn param_format_hint(def: Option<&crate::node_builder::ParamDef>) -> Option<&'static str> {
+    let def = def?;
+    match def.kind {
+        crate::node_builder::ParamType::String => Some("text"),
+        crate::node_builder::ParamType::Float => Some("number (e.g. 1.23)"),
+        crate::node_builder::ParamType::Bool => Some("true/false"),
+        crate::node_builder::ParamType::List => Some("comma or space separated"),
+        crate::node_builder::ParamType::Table =>
+            Some("inline table (e.g. x = 1, y = 2) or two numbers"),
+    }
+}
+
+fn render_param_input_line(
+    def: Option<&crate::node_builder::ParamDef>,
+    buffer: &str
+) -> Line<'static> {
+    let value_label = Span::styled("Value:", Style::new().yellow().underlined());
+    let (prefix, suffix) = match def.map(|def| &def.kind) {
+        Some(crate::node_builder::ParamType::List) => ("[ ", " ]"),
+        Some(crate::node_builder::ParamType::Table) => ("{ ", " }"),
+        _ => ("", ""),
+    };
+    let placeholder = "<enter value>";
+    let input = if buffer.is_empty() { placeholder } else { buffer };
+    let input_style = if buffer.is_empty() {
+        Style::new().fg(Color::DarkGray).bg(Color::White)
+    } else {
+        Style::new().fg(Color::Black).bg(Color::White)
+    };
+    let input_span = Span::styled(input.to_string(), input_style);
+    let cursor = Span::styled("|", Style::new().fg(Color::Red).bg(Color::White).bold());
+    Line::from(
+        vec![value_label, Span::raw(" "), Span::raw(prefix), input_span, cursor, Span::raw(suffix)]
+    )
 }
 
 fn render_edge_editor(app: &App, area: Rect, buf: &mut Buffer) {
@@ -256,7 +326,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
     horizontal[1]
 }
 
-fn render_exiting(app: &App, area: Rect, buf: &mut Buffer) {
+fn render_exiting(_app: &App, area: Rect, buf: &mut Buffer) {
     let title = Line::from("Exiting".bold());
     let block = Block::bordered().title(title.centered()).border_set(border::THICK);
     let counter_text = Text::from(
@@ -279,20 +349,17 @@ mod tests {
 
         let mut expected = Buffer::with_lines(
             vec![
-                "┏━━━━━━━━━━━━━ Counter App Tutorial ━━━━━━━━━━━━━┓",
-                "┃                    Value: 0                    ┃",
+                "┏━━━━━━━━━━━━━━━ Tui Graph Editor ━━━━━━━━━━━━━━━┓",
+                "┃Welcome to the Tui Graph Editor! Press 'G' to st┃",
                 "┃                                                ┃",
-                "┗━ Decrement <Left> Increment <Right> Quit <Q> ━━┛"
+                "┗━━━━━━━━━━ Graph Editor <G> Quit <Q> ━━━━━━━━━━━┛"
             ]
         );
         let title_style = Style::new().bold();
-        let counter_style = Style::new().yellow();
         let key_style = Style::new().blue().bold();
-        expected.set_style(Rect::new(14, 0, 22, 1), title_style);
-        expected.set_style(Rect::new(28, 1, 1, 1), counter_style);
-        expected.set_style(Rect::new(13, 3, 6, 1), key_style);
-        expected.set_style(Rect::new(30, 3, 7, 1), key_style);
-        expected.set_style(Rect::new(43, 3, 4, 1), key_style);
+        expected.set_style(Rect::new(16, 0, 18, 1), title_style);
+        expected.set_style(Rect::new(25, 3, 3, 1), key_style);
+        expected.set_style(Rect::new(34, 3, 4, 1), key_style);
 
         assert_eq!(buf, expected);
     }

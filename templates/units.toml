@@ -1,0 +1,201 @@
+# Node type catalogs for graph_tui.
+
+[nodes.types.cstr]
+
+[nodes.types.cstr.params.name]
+type = "string"
+
+[nodes.types.cstr.params.coords]
+type = "table"
+value_type = "float"
+
+[nodes.types.cstr.params.model_id]
+type = "string"
+
+[nodes.types.cstr.params.in]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.cstr.params.out]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.cstr.params.recycle_split]
+type = "float"
+
+[nodes.types.cstr.params.parameter_override]
+type = "string"
+
+[nodes.types.cstr.params.parameter_value]
+type = "float"
+
+[nodes.types.cstr.params.parameter_override_from]
+type = "string"
+
+[nodes.types.cstr.params.parameter_tau]
+type = "float"
+
+[nodes.types.cstr.params.initial]
+type = "list"
+value_type = "float"
+
+
+[nodes.types.sensor]
+
+[nodes.types.sensor.params.name]
+type = "string"
+
+[nodes.types.sensor.params.coords]
+type = "table"
+value_type = "float"
+
+[nodes.types.sensor.params.in]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.sensor.params.out]
+type = "list"
+len = 1
+value_type = "string"
+
+
+[nodes.types.virtual_sensor]
+
+[nodes.types.virtual_sensor.params.name]
+type = "string"
+
+[nodes.types.virtual_sensor.params.coords]
+type = "table"
+value_type = "float"
+
+[nodes.types.virtual_sensor.params.ins]
+type = "list"
+value_type = "string"
+
+[nodes.types.virtual_sensor.params.outs]
+type = "list"
+value_type = "string"
+
+[nodes.types.virtual_sensor.params.kind]
+type = "table"
+value_type = "any"
+
+[nodes.types.virtual_sensor.params.model_id]
+type = "string"
+
+
+[nodes.types.mixer]
+
+[nodes.types.mixer.params.name]
+type = "string"
+
+[nodes.types.mixer.params.coords]
+type = "table"
+value_type = "float"
+
+[nodes.types.mixer.params.ins]
+type = "list"
+value_type = "string"
+
+[nodes.types.mixer.params.out]
+type = "list"
+len = 1
+value_type = "string"
+
+
+[nodes.types.splitter_n]
+
+[nodes.types.splitter_n.params.name]
+type = "string"
+
+[nodes.types.splitter_n.params.coords]
+type = "table"
+value_type = "float"
+
+[nodes.types.splitter_n.params.in]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.splitter_n.params.outs]
+type = "list"
+value_type = "string"
+
+[nodes.types.splitter_n.params.split_weights]
+type = "list"
+value_type = "float"
+
+
+[nodes.types.splitter]
+
+[nodes.types.splitter.params.name]
+type = "string"
+
+[nodes.types.splitter.params.coords]
+type = "table"
+value_type = "float"
+
+[nodes.types.splitter.params.in]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.splitter.params.out_a]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.splitter.params.out_b]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.splitter.params.split]
+type = "float"
+
+
+[nodes.types.valve]
+
+[nodes.types.valve.params.name]
+type = "string"
+
+[nodes.types.valve.params.coords]
+type = "table"
+value_type = "float"
+
+[nodes.types.valve.params.in]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.valve.params.out]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.valve.params.cv]
+type = "float"
+
+[nodes.types.valve.params.opening]
+type = "float"
+
+
+[nodes.types.source]
+
+[nodes.types.source.params.name]
+type = "string"
+
+[nodes.types.source.params.out]
+type = "list"
+len = 1
+value_type = "string"
+
+[nodes.types.source.params.flow]
+type = "float"
+
+[nodes.types.source.params.c]
+type = "list"
+value_type = "float"
