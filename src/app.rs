@@ -485,7 +485,7 @@ fn apply_list_value(node: &mut NodeInstance, key: &str, value: &str) {
         }
         Some(toml::Value::String(existing)) => {
             if existing != value {
-                let mut items = vec![toml::Value::String(existing.clone()), entry];
+                let items = vec![toml::Value::String(existing.clone()), entry];
                 node.values.insert(key.to_string(), toml::Value::Array(items));
             }
         }
@@ -524,8 +524,7 @@ pub struct NodeEditState {
 
 impl NodeEditState {
     pub fn new(type_name: String, def: &NodeTypeDef) -> Self {
-        let mut param_keys: Vec<String> = def
-            .params
+        let mut param_keys: Vec<String> = def.params
             .keys()
             .filter(|key| {
                 let key = key.as_str();
@@ -737,6 +736,7 @@ pub fn load_node_catalog_from_path(path: &str) -> Result<NodeTypeCatalog, String
 fn load_node_catalog_default() -> NodeTypeCatalog {
     let raw = include_str!("../templates/units.toml");
     toml::from_str(raw).unwrap_or_else(|_| NodeTypeCatalog {
+        format: None,
         nodes: NodeTypesSection { types: HashMap::new() },
     })
 }
@@ -745,4 +745,28 @@ fn node_type_keys(catalog: &NodeTypeCatalog) -> Vec<String> {
     let mut keys: Vec<String> = catalog.nodes.types.keys().cloned().collect();
     keys.sort();
     keys
+}
+
+pub fn write_graph_to_path(
+    path: &str,
+    graph: &Graph,
+    catalog: &NodeTypeCatalog
+) -> Result<(), String> {
+    let string_result = graph.to_units_toml_string(catalog);
+    match string_result {
+        Ok(string) => {
+            let result = std::fs::write(&path, &string);
+            match result {
+                Ok(()) => {
+                    return Ok(());
+                }
+                Err(error) => {
+                    return Err(error.to_string());
+                }
+            }
+        }
+        Err(error) => {
+            return Err(error.to_string());
+        }
+    }
 }

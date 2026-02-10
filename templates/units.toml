@@ -1,9 +1,14 @@
 # Node type catalogs for graph_tui.
 
+[format]
+root = "units"
+
 [nodes.types.cstr]
+order = ["name", "coords"]
 
 [nodes.types.cstr.params.name]
 type = "string"
+source = "node_label"
 
 [nodes.types.cstr.params.coords]
 type = "table"
@@ -16,11 +21,15 @@ type = "string"
 type = "list"
 len = 1
 value_type = "string"
+source = { incoming_edge_label = { index = 0 } }
+render = "scalar"
 
 [nodes.types.cstr.params.out]
 type = "list"
 len = 1
 value_type = "string"
+source = { outgoing_edge_label = { index = 0 } }
+render = "scalar"
 
 [nodes.types.cstr.params.recycle_split]
 type = "float"
@@ -43,9 +52,11 @@ value_type = "float"
 
 
 [nodes.types.sensor]
+order = ["name", "coords"]
 
 [nodes.types.sensor.params.name]
 type = "string"
+source = "node_label"
 
 [nodes.types.sensor.params.coords]
 type = "table"
@@ -55,17 +66,23 @@ value_type = "float"
 type = "list"
 len = 1
 value_type = "string"
+source = { incoming_edge_label = { index = 0 } }
+render = "scalar"
 
 [nodes.types.sensor.params.out]
 type = "list"
 len = 1
 value_type = "string"
+source = { outgoing_edge_label = { index = 0 } }
+render = "scalar"
 
 
 [nodes.types.virtual_sensor]
+order = ["name", "coords"]
 
 [nodes.types.virtual_sensor.params.name]
 type = "string"
+source = "node_label"
 
 [nodes.types.virtual_sensor.params.coords]
 type = "table"
@@ -74,10 +91,12 @@ value_type = "float"
 [nodes.types.virtual_sensor.params.ins]
 type = "list"
 value_type = "string"
+source = "incoming_edge_labels"
 
 [nodes.types.virtual_sensor.params.outs]
 type = "list"
 value_type = "string"
+source = "outgoing_edge_labels"
 
 [nodes.types.virtual_sensor.params.kind]
 type = "table"
@@ -88,9 +107,11 @@ type = "string"
 
 
 [nodes.types.mixer]
+order = ["name", "coords"]
 
 [nodes.types.mixer.params.name]
 type = "string"
+source = "node_label"
 
 [nodes.types.mixer.params.coords]
 type = "table"
@@ -99,17 +120,22 @@ value_type = "float"
 [nodes.types.mixer.params.ins]
 type = "list"
 value_type = "string"
+source = "incoming_edge_labels"
 
 [nodes.types.mixer.params.out]
 type = "list"
 len = 1
 value_type = "string"
+source = { outgoing_edge_label = { index = 0 } }
+render = "scalar"
 
 
 [nodes.types.splitter_n]
+order = ["name", "coords"]
 
 [nodes.types.splitter_n.params.name]
 type = "string"
+source = "node_label"
 
 [nodes.types.splitter_n.params.coords]
 type = "table"
@@ -119,10 +145,13 @@ value_type = "float"
 type = "list"
 len = 1
 value_type = "string"
+source = { incoming_edge_label = { index = 0 } }
+render = "scalar"
 
 [nodes.types.splitter_n.params.outs]
 type = "list"
 value_type = "string"
+source = "outgoing_edge_labels"
 
 [nodes.types.splitter_n.params.split_weights]
 type = "list"
@@ -130,9 +159,11 @@ value_type = "float"
 
 
 [nodes.types.splitter]
+order = ["name", "coords"]
 
 [nodes.types.splitter.params.name]
 type = "string"
+source = "node_label"
 
 [nodes.types.splitter.params.coords]
 type = "table"
@@ -142,25 +173,33 @@ value_type = "float"
 type = "list"
 len = 1
 value_type = "string"
+source = { incoming_edge_label = { index = 0 } }
+render = "scalar"
 
 [nodes.types.splitter.params.out_a]
 type = "list"
 len = 1
 value_type = "string"
+source = { outgoing_edge_label = { index = 0 } }
+render = "scalar"
 
 [nodes.types.splitter.params.out_b]
 type = "list"
 len = 1
 value_type = "string"
+source = { outgoing_edge_label = { index = 1 } }
+render = "scalar"
 
 [nodes.types.splitter.params.split]
 type = "float"
 
 
 [nodes.types.valve]
+order = ["name", "coords"]
 
 [nodes.types.valve.params.name]
 type = "string"
+source = "node_label"
 
 [nodes.types.valve.params.coords]
 type = "table"
@@ -170,11 +209,15 @@ value_type = "float"
 type = "list"
 len = 1
 value_type = "string"
+source = { incoming_edge_label = { index = 0 } }
+render = "scalar"
 
 [nodes.types.valve.params.out]
 type = "list"
 len = 1
 value_type = "string"
+source = { outgoing_edge_label = { index = 0 } }
+render = "scalar"
 
 [nodes.types.valve.params.cv]
 type = "float"
@@ -184,14 +227,18 @@ type = "float"
 
 
 [nodes.types.source]
+order = ["name"]
 
 [nodes.types.source.params.name]
 type = "string"
+source = "node_label"
 
 [nodes.types.source.params.out]
 type = "list"
 len = 1
 value_type = "string"
+source = { outgoing_edge_label = { index = 0 } }
+render = "scalar"
 
 [nodes.types.source.params.flow]
 type = "float"

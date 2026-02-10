@@ -15,6 +15,9 @@ pub struct NodeInstance {
     pub values: HashMap<String, toml::Value>,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TypeInstance {}
+
 impl NodeInstance {
     pub fn new(id: usize, type_: String, label: String) -> Self {
         Self {
@@ -28,7 +31,15 @@ impl NodeInstance {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NodeTypeCatalog {
+    #[serde(default)]
+    pub format: Option<FormatSpec>,
     pub nodes: NodeTypesSection,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct FormatSpec {
+    /// Root table name for serialized output (e.g. "units").
+    pub root: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -38,6 +49,8 @@ pub struct NodeTypesSection {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NodeTypeDef {
+    #[serde(default)]
+    pub order: Option<Vec<String>>,
     pub params: HashMap<String, ParamDef>,
 }
 
@@ -47,6 +60,42 @@ pub struct ParamDef {
     pub kind: ParamType,
     pub value_type: Option<ValueType>,
     pub len: Option<usize>,
+
+    /// Optional hint to derive this value during serialization.
+    #[serde(default)]
+    pub source: Option<ParamSource>,
+
+    /// Optional hint controlling rendering (e.g. scalar vs list).
+    #[serde(default)]
+    pub render: Option<RenderHint>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum ParamSource {
+    /// Use the node's label.
+    NodeLabel,
+    /// Use all incoming edge labels.
+    IncomingEdgeLabels,
+    /// Use all outgoing edge labels.
+    OutgoingEdgeLabels,
+    /// Use the Nth incoming edge label (default index 0).
+    IncomingEdgeLabel {
+        index: Option<usize>,
+    },
+    /// Use the Nth outgoing edge label (default index 0).
+    OutgoingEdgeLabel {
+        index: Option<usize>,
+    },
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum RenderHint {
+    /// Render list-of-one as scalar.
+    Scalar,
+    /// Always render as list (wrap scalars).
+    List,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

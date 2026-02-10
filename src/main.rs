@@ -9,8 +9,10 @@ mod edge;
 #[derive(Debug, Parser)]
 #[command(name = "graph-tui", about = "Graph Tui for editing Graphs in the Terminal")]
 struct Args {
-    #[arg(short, long, value_name = "PATH")]
+    #[arg(short, long, value_name = "input_path")]
     template: Option<String>,
+    #[arg(short, long, value_name = "output_path")]
+    output: Option<String>,
 }
 
 fn main() -> color_eyre::Result<()> {
@@ -26,5 +28,15 @@ fn main() -> color_eyre::Result<()> {
         app::App::new()
     };
     ratatui::run(|terminal| tui::Tui::new().run(terminal, &mut app))?;
+    let result = app::write_graph_to_path(&args.output.unwrap(), &app.graph, &app.node_catalog);
+    match result {
+        Ok(()) => {
+            return Ok(());
+        }
+        Err(error) => {
+            println!("{}", error.to_string());
+        }
+    }
+
     Ok(())
 }
