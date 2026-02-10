@@ -13,8 +13,7 @@ fn render_non_table_rhs(value: &toml::Value) -> Result<String, String> {
         .lines()
         .next()
         .ok_or_else(|| "failed to render value".to_string())?;
-    line
-        .strip_prefix("v = ")
+    line.strip_prefix("v = ")
         .map(|s| s.to_string())
         .ok_or_else(|| "unexpected rendered format".to_string())
 }

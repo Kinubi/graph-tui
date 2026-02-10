@@ -1,0 +1,13 @@
+[units]
+
+[[units.cstr]]
+name = "lane1.t2"
+coords = { x = 260.0, y = 0.0 }
+in = "lane1_s1"
+initial = [3.37, 0.69, 0.26]
+model_id = "file:examples/models/asm2d2n_tank_transport_do_off.toml"
+out = "lane1_t2_out"
+parameter_override = "so"
+parameter_tau = 0.0000115
+parameter_value = 1.0
+recycle_split = 0.0
